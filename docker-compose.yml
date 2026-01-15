@@ -1,0 +1,51 @@
+services:
+  wyoming-whisper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        HSA_OVERRIDE_GFX_VERSION: ${HSA_OVERRIDE_GFX_VERSION:-11.0.0}
+        # Build for multiple GPU architectures (RDNA 2 and RDNA 3)
+        AMDGPU_TARGETS: gfx1100,gfx1101,gfx1102,gfx1030,gfx1031,gfx1032
+        CMAKE_HIP_ARCHITECTURES: gfx1100;gfx1101;gfx1102;gfx1030;gfx1031;gfx1032
+    container_name: wyoming-whisper-rocm
+    restart: unless-stopped
+
+    # GPU device access - required for ROCm
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+
+    # Security options for GPU access
+    security_opt:
+      - seccomp:unconfined
+
+    # Group access for GPU
+    group_add:
+      - video
+      - render
+
+    # Environment variables
+    environment:
+      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-11.0.0}
+      - HIP_VISIBLE_DEVICES=0
+      - ROCM_VERSION=7.1.1
+      - ROCM_PATH=/opt/rocm
+      - LD_LIBRARY_PATH=/usr/local/lib:/opt/rocm/lib:/opt/rocm/lib/llvm/lib
+      - CTRANSLATE2_ROOT=/usr/local
+
+    # Port for Wyoming protocol
+    ports:
+      - "10300:10300"
+
+    # Volume for model persistence
+    volumes:
+      - ./data:/data
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.connect(('localhost',10300)); s.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
