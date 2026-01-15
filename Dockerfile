@@ -65,17 +65,12 @@ RUN pip install --no-cache-dir \
 # Create directory for models
 RUN mkdir -p /data/models
 
-# Download Whisper medium model at build time
-RUN python3 -c "from faster_whisper import WhisperModel; WhisperModel('medium', device='cpu', download_root='/data/models')"
+# Copy entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Expose Wyoming protocol port
 EXPOSE 10300
 
 # Set entrypoint - note: device="cuda" is correct for ROCm via HIP
-ENTRYPOINT ["python3", "-m", "wyoming_faster_whisper", \
-    "--model", "medium", \
-    "--device", "cuda", \
-    "--compute-type", "float16", \
-    "--beam-size", "5", \
-    "--uri", "tcp://0.0.0.0:10300", \
-    "--data-dir", "/data"]
+ENTRYPOINT ["/app/entrypoint.sh"]

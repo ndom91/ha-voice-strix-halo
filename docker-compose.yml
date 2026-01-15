@@ -33,6 +33,10 @@ services:
       - ROCM_PATH=/opt/rocm
       - LD_LIBRARY_PATH=/usr/local/lib:/opt/rocm/lib:/opt/rocm/lib/llvm/lib
       - CTRANSLATE2_ROOT=/usr/local
+      # Whisper model configuration
+      - WHISPER_MODEL=${WHISPER_MODEL:-medium}
+      - WHISPER_COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-float16}
+      - WHISPER_BEAM_SIZE=${WHISPER_BEAM_SIZE:-5}
 
     # Port for Wyoming protocol
     ports:
