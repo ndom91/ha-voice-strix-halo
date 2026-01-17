@@ -4,10 +4,10 @@ services:
       context: ./whisper
       dockerfile: Dockerfile
       args:
-        HSA_OVERRIDE_GFX_VERSION: ${HSA_OVERRIDE_GFX_VERSION:-11.0.0}
+        HSA_OVERRIDE_GFX_VERSION: ${HSA_OVERRIDE_GFX_VERSION:-11.5.1}
         # Build for multiple GPU architectures (RDNA 2 and RDNA 3)
-        AMDGPU_TARGETS: gfx1100,gfx1101,gfx1102,gfx1030,gfx1031,gfx1032
-        CMAKE_HIP_ARCHITECTURES: gfx1100;gfx1101;gfx1102;gfx1030;gfx1031;gfx1032
+        AMDGPU_TARGETS: gfx1151
+        CMAKE_HIP_ARCHITECTURES: gfx1151
     container_name: wyoming-whisper-rocm
     restart: unless-stopped
 
@@ -27,7 +27,7 @@ services:
 
     # Environment variables
     environment:
-      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-11.0.0}
+      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-11.5.1}
       - HIP_VISIBLE_DEVICES=0
       - ROCM_VERSION=7.1.1
       - ROCM_PATH=/opt/rocm
@@ -60,9 +60,9 @@ services:
       context: ./tts
       dockerfile: Dockerfile
       args:
-        HSA_OVERRIDE_GFX_VERSION: ${HSA_OVERRIDE_GFX_VERSION:-11.0.0}
+        HSA_OVERRIDE_GFX_VERSION: ${HSA_OVERRIDE_GFX_VERSION:-11.5.1}
         # Build for multiple GPU architectures (RDNA 2 and RDNA 3)
-        AMDGPU_TARGETS: gfx1100,gfx1101,gfx1102,gfx1030,gfx1031,gfx1032
+        AMDGPU_TARGETS: gfx1151
     container_name: wyoming-piper-rocm
     restart: unless-stopped
 
@@ -82,7 +82,7 @@ services:
 
     # Environment variables
     environment:
-      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-11.0.0}
+      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-11.5.1}
       - HIP_VISIBLE_DEVICES=0
       - ROCM_VERSION=7.1.1
       - ROCM_PATH=/opt/rocm

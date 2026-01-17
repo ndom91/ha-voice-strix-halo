@@ -13,6 +13,7 @@ CMD="python3 -m wyoming_faster_whisper \
     --device cuda \
     --compute-type $WHISPER_COMPUTE_TYPE \
     --beam-size $WHISPER_BEAM_SIZE \
+    --language en \
     --uri tcp://0.0.0.0:10300 \
     --data-dir /data"
 

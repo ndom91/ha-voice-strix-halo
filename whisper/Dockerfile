@@ -7,7 +7,7 @@ WORKDIR /app
 ENV ROCM_VERSION=7.1.1
 ENV HIP_VISIBLE_DEVICES=0
 # GPU architecture override - will be set via docker-compose
-ENV HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-11.0.0}
+ENV HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-11.5.1}
 
 # Install build dependencies and system packages
 RUN apt-get update && apt-get install -y \
@@ -29,8 +29,8 @@ ENV LD_LIBRARY_PATH=/usr/local/lib:${ROCM_PATH}/lib:${ROCM_PATH}/lib/llvm/lib:${
 ENV CTRANSLATE2_ROOT=/usr/local
 
 # Set GPU architecture (build arg, will be overridden per GPU)
-ARG AMDGPU_TARGETS=gfx1100,gfx1101,gfx1102,gfx1030,gfx1031,gfx1032
-ARG CMAKE_HIP_ARCHITECTURES=gfx1100;gfx1101;gfx1102;gfx1030;gfx1031;gfx1032
+ARG AMDGPU_TARGETS=gfx1151
+ARG CMAKE_HIP_ARCHITECTURES=gfx1151
 
 # Clone and build CTranslate2-rocm (paralin fork)
 RUN git clone --recurse-submodules https://github.com/paralin/ctranslate2-rocm.git /tmp/ctranslate2 && \

@@ -6,7 +6,7 @@ WORKDIR /app
 # Set environment variables for ROCm
 ENV ROCM_VERSION=7.1.1
 ENV HIP_VISIBLE_DEVICES=0
-ENV HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-11.0.0}
+ENV HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-11.5.1}
 
 # Install build dependencies and system packages
 RUN apt-get update && apt-get install -y \
@@ -26,7 +26,7 @@ ENV ROCM_PATH=/opt/rocm
 ENV LD_LIBRARY_PATH=/usr/local/lib:${ROCM_PATH}/lib:${ROCM_PATH}/lib/llvm/lib:${LD_LIBRARY_PATH}
 
 # Set GPU architecture (build arg)
-ARG AMDGPU_TARGETS=gfx1100,gfx1101,gfx1102,gfx1030,gfx1031,gfx1032
+ARG AMDGPU_TARGETS=gfx1151
 
 # Install ONNX Runtime with ROCm support
 # Using the rocm execution provider
