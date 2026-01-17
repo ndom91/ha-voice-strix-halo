@@ -12,8 +12,8 @@ Docker setup for Wyoming + `faster-whisper` (STT) and `piper` (TTS) with [ctrans
 
 ## Services
 
-- **wyoming-whisper** - Speech-to-Text on port 10300
-- **wyoming-piper** - Text-to-Speech on port 10200
+- **wyoming-whisper** - Speech-to-Text on port `10300`
+- **wyoming-piper** - Text-to-Speech on port `10200`
 
 ## Prerequisites
 
@@ -35,49 +35,26 @@ You'll see output like `gfx1100`, `gfx1030`, `gfx906`, etc.
 
 ### 2. Configure GPU Architecture
 
-Create the `.env` file and set your GPU architecture override:
+Create the `.env` file based on the `.env.example` and set your GPU architecture override:
+
+The default is `gfx1151` corresponding to `11.5.1` (for RDNA 3.5 / Radeon 8060S).
 
 ```bash
 # For RDNA 3 (RX 7000 series): gfx1100, gfx1101, gfx1102
 HSA_OVERRIDE_GFX_VERSION=11.0.0
-
 # For RDNA 2 (RX 6000 series): gfx1030, gfx1031, gfx1032
 HSA_OVERRIDE_GFX_VERSION=10.3.0
-
 # For RDNA (RX 5000 series): gfx1010, gfx1012
 HSA_OVERRIDE_GFX_VERSION=10.1.0
-
 # For Vega: gfx900, gfx906
 HSA_OVERRIDE_GFX_VERSION=9.0.0
 ```
 
-See `.env.example` for more GPU architecture mappings.
-
 ### 3. Build and Run
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
-
-## Home Assistant Integration
-
-### Add Wyoming Integrations
-
-#### Speech-to-Text (Whisper)
-1. Go to **Settings** → **Devices & Services** → **Add Integration**
-2. Search for **"Wyoming Protocol"**
-3. Enter connection details:
-   - **Host**: `<docker-host-ip>` (e.g., `192.168.1.100`)
-   - **Port**: `10300`
-4. Click **Submit**
-
-#### Text-to-Speech (Piper)
-1. Go to **Settings** → **Devices & Services** → **Add Integration**
-2. Search for **"Wyoming Protocol"**
-3. Enter connection details:
-   - **Host**: `<docker-host-ip>` (e.g., `192.168.1.100`)
-   - **Port**: `10200`
-4. Click **Submit**
 
 ## Configuration
 
@@ -108,37 +85,6 @@ Available environment variables:
 - `PIPER_DEBUG` - true/false
 
 Available voices: https://github.com/rhasspy/piper/blob/master/VOICES.md
-
-Popular voices:
-- `en_US-lessac-medium` - Natural female voice (default)
-- `en_US-libritts-high` - High quality multi-speaker
-- `en_GB-alan-medium` - British male voice
-- `en_US-ryan-high` - Clear male voice
-
-## Troubleshooting
-
-### Check Service Status
-```bash
-docker-compose ps
-```
-
-### View Logs
-```bash
-# Whisper logs
-docker-compose logs -f wyoming-whisper
-
-# Piper logs
-docker-compose logs -f wyoming-piper
-```
-
-### Test Connectivity
-```bash
-# Test Whisper
-nc -zv localhost 10300
-
-# Test Piper
-nc -zv localhost 10200
-```
 
 ## Resources
 
