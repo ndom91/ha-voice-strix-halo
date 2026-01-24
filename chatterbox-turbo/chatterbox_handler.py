@@ -39,8 +39,9 @@ def get_model(
             _LOGGER.info("Device: %s", device)
 
             try:
-                # Don't import torchvision - not needed for chatterbox and causes
-                # "operator torchvision::nms does not exist" on ROCm builds
+                # Import torchvision first to ensure NMS operators are registered
+                # Using version-matched wheels from AMD ROCm 7.1.1 repository
+                import torchvision
                 from chatterbox.tts_turbo import ChatterboxTurboTTS
 
                 _LOGGER.info("Calling ChatterboxTurboTTS.from_pretrained...")
