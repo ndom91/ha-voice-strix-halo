@@ -15,16 +15,8 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install version-matched PyTorch, torchvision, and triton from AMD ROCm 7.1.1 repository
-# This fixes the "operator torchvision::nms does not exist" error
-RUN wget https://repo.radeon.com/rocm/manylinux/rocm-rel-7.1.1/torch-2.9.1+rocm7.1.1.lw.git351ff442-cp311-cp311-linux_x86_64.whl && \
-    wget https://repo.radeon.com/rocm/manylinux/rocm-rel-7.1.1/torchvision-0.24.0+rocm7.1.1.gitb919bd0c-cp311-cp311-linux_x86_64.whl && \
-    wget https://repo.radeon.com/rocm/manylinux/rocm-rel-7.1.1/triton-3.5.1+rocm7.1.1.gita272dfa8-cp311-cp311-linux_x86_64.whl && \
-    pip3 install --no-cache-dir --force-reinstall \
-        torch-2.9.1+rocm7.1.1.lw.git351ff442-cp311-cp311-linux_x86_64.whl \
-        torchvision-0.24.0+rocm7.1.1.gitb919bd0c-cp311-cp311-linux_x86_64.whl \
-        triton-3.5.1+rocm7.1.1.gita272dfa8-cp311-cp311-linux_x86_64.whl && \
-    rm *.whl
+# Don't install torchvision - chatterbox doesn't need it and it causes NMS operator errors
+# Use torch and triton from base image (already present in rocm/pytorch base)
 
 # Install Python dependencies
 RUN pip3 install --no-cache-dir \
