@@ -202,7 +202,6 @@ services:
     # Group access for GPU
     group_add:
       - video
-      - render
 
     # Environment variables
     environment:
