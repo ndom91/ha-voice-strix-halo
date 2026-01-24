@@ -18,19 +18,22 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-# Install qwen-tts first with -U to get latest version (critical for compatibility)
-RUN pip3 install --no-cache-dir -U qwen-tts
-
-# Install remaining dependencies
+# Pin transformers version to match model requirements (from preprocessor_config.json)
 RUN pip3 install --no-cache-dir \
-    wyoming \
-    transformers \
+    "transformers>=4.57.0" \
     accelerate \
     numpy \
     scipy \
     packaging \
-    onnxruntime-rocm \
     ninja
+
+# Install qwen-tts after transformers to ensure compatibility
+RUN pip3 install --no-cache-dir -U qwen-tts
+
+# Install additional dependencies
+RUN pip3 install --no-cache-dir \
+    wyoming \
+    onnxruntime-rocm
 
 # Attempt to install flash-attention for ROCm (non-fatal if fails)
 # Note: ROCm flash-attention supports MI200x, MI250x, MI300x, MI355x GPUs (CDNA architecture)
