@@ -37,9 +37,11 @@ RUN pip3 install --no-cache-dir \
     torch \
     torchaudio \
     einops \
-    vocos
+    vocos \
+    perth \
+    packaging
 
-# Install Chatterbox TTS (will use already installed numpy)
+# Install Chatterbox TTS (will use already installed numpy and dependencies)
 RUN pip3 install --no-cache-dir --no-deps \
     git+https://github.com/resemble-ai/chatterbox.git
 
