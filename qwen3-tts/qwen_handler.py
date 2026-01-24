@@ -272,9 +272,16 @@ class QwenEventHandler(AsyncEventHandler):
 
                 # Convert list to numpy array
                 if isinstance(audio_data, list):
-                    audio_data = np.array(audio_data)
-                    _LOGGER.debug("Converted list to numpy array: shape=%s, dtype=%s",
-                                 audio_data.shape, audio_data.dtype)
+                    # If list contains a single array, extract it
+                    if len(audio_data) == 1 and isinstance(audio_data[0], np.ndarray):
+                        audio_data = audio_data[0]
+                        _LOGGER.debug("Extracted single array from list: shape=%s, dtype=%s",
+                                     audio_data.shape, audio_data.dtype)
+                    else:
+                        # Otherwise convert list to array
+                        audio_data = np.array(audio_data)
+                        _LOGGER.debug("Converted list to numpy array: shape=%s, dtype=%s",
+                                     audio_data.shape, audio_data.dtype)
 
                 # Convert to numpy array if tensor
                 if torch.is_tensor(audio_data):

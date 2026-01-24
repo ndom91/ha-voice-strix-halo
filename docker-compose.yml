@@ -150,10 +150,10 @@ services:
       - HUGGINGFACE_HUB_CACHE=/data/hf_cache/hub
       # Qwen3-TTS configuration
       - QWEN_MODEL=${QWEN_MODEL:-Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign}
-      - QWEN_VOICE_INSTRUCT=${QWEN_VOICE_INSTRUCT:-Clear, natural voice with medium pitch. Friendly personal assistant.}
+      - QWEN_VOICE_INSTRUCT=${QWEN_VOICE_INSTRUCT:-Clear, natural voice with medium pitch. Friendly British female personal assistant.}
       - QWEN_LANGUAGE=${QWEN_LANGUAGE:-Auto}
       - QWEN_DEVICE=${QWEN_DEVICE:-cuda:0}
-      - QWEN_DTYPE=${QWEN_DTYPE:-bfloat16}
+      - QWEN_DTYPE=${QWEN_DTYPE:-float16}
       - QWEN_FLASH_ATTENTION=${QWEN_FLASH_ATTENTION:-true}
       - QWEN_SAMPLES_PER_CHUNK=${QWEN_SAMPLES_PER_CHUNK:-1024}
       - QWEN_CACHE_DIR=/data/models
