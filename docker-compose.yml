@@ -55,15 +55,70 @@ services:
       retries: 3
       start_period: 60s
 
-  wyoming-piper:
+  # wyoming-piper: (Commented out - migrated to Qwen3-TTS)
+  # wyoming-piper:
+  #   build:
+  #     context: ./piper
+  #     dockerfile: Dockerfile
+  #     args:
+  #       HSA_OVERRIDE_GFX_VERSION: ${HSA_OVERRIDE_GFX_VERSION:-11.5.1}
+  #       # Build for multiple GPU architectures (RDNA 2 and RDNA 3)
+  #       AMDGPU_TARGETS: gfx1151
+  #   container_name: wyoming-piper-rocm
+  #   restart: unless-stopped
+  #
+  #   # GPU device access - required for ROCm
+  #   devices:
+  #     - /dev/kfd:/dev/kfd
+  #     - /dev/dri:/dev/dri
+  #
+  #   # Security options for GPU access
+  #   security_opt:
+  #     - seccomp:unconfined
+  #
+  #   # Group access for GPU
+  #   group_add:
+  #     - video
+  #     - render
+  #
+  #   # Environment variables
+  #   environment:
+  #     - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-11.5.1}
+  #     - HIP_VISIBLE_DEVICES=0
+  #     - ROCM_VERSION=7.1.1
+  #     - ROCM_PATH=/opt/rocm
+  #     - LD_LIBRARY_PATH=/usr/local/lib:/opt/rocm/lib:/opt/rocm/lib/llvm/lib
+  #     # ONNX Runtime threading - configured dynamically by piper_wrapper.py
+  #     # Piper voice configuration
+  #     - PIPER_VOICE=${PIPER_VOICE:-en_US-lessac-medium}
+  #     - PIPER_LENGTH_SCALE=${PIPER_LENGTH_SCALE:-1.0}
+  #     - PIPER_NOISE_SCALE=${PIPER_NOISE_SCALE:-0.667}
+  #     - PIPER_NOISE_W=${PIPER_NOISE_W:-0.8}
+  #     - PIPER_DEBUG=${PIPER_DEBUG:-false}
+  #
+  #   # Port for Wyoming protocol
+  #   ports:
+  #     - "10200:10200"
+  #
+  #   # Volume for model persistence
+  #   volumes:
+  #     - ./piper-data:/data
+  #
+  #   # Health check
+  #   healthcheck:
+  #     test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.connect(('localhost',10200)); s.close()"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 60s
+
+  wyoming-qwen-tts:
     build:
-      context: ./piper
+      context: ./qwen3-tts
       dockerfile: Dockerfile
       args:
         HSA_OVERRIDE_GFX_VERSION: ${HSA_OVERRIDE_GFX_VERSION:-11.5.1}
-        # Build for multiple GPU architectures (RDNA 2 and RDNA 3)
-        AMDGPU_TARGETS: gfx1151
-    container_name: wyoming-piper-rocm
+    container_name: wyoming-qwen-tts-rocm
     restart: unless-stopped
 
     # GPU device access - required for ROCm
@@ -87,13 +142,16 @@ services:
       - ROCM_VERSION=7.1.1
       - ROCM_PATH=/opt/rocm
       - LD_LIBRARY_PATH=/usr/local/lib:/opt/rocm/lib:/opt/rocm/lib/llvm/lib
-      # ONNX Runtime threading - configured dynamically by piper_wrapper.py
-      # Piper voice configuration
-      - PIPER_VOICE=${PIPER_VOICE:-en_US-lessac-medium}
-      - PIPER_LENGTH_SCALE=${PIPER_LENGTH_SCALE:-1.0}
-      - PIPER_NOISE_SCALE=${PIPER_NOISE_SCALE:-0.667}
-      - PIPER_NOISE_W=${PIPER_NOISE_W:-0.8}
-      - PIPER_DEBUG=${PIPER_DEBUG:-false}
+      # Qwen3-TTS configuration
+      - QWEN_MODEL=${QWEN_MODEL:-Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign}
+      - QWEN_VOICE_INSTRUCT=${QWEN_VOICE_INSTRUCT:-Clear, natural voice with medium pitch}
+      - QWEN_LANGUAGE=${QWEN_LANGUAGE:-Auto}
+      - QWEN_DEVICE=${QWEN_DEVICE:-cuda:0}
+      - QWEN_DTYPE=${QWEN_DTYPE:-bfloat16}
+      - QWEN_FLASH_ATTENTION=${QWEN_FLASH_ATTENTION:-true}
+      - QWEN_SAMPLES_PER_CHUNK=${QWEN_SAMPLES_PER_CHUNK:-1024}
+      - QWEN_CACHE_DIR=/data/models
+      - QWEN_DEBUG=${QWEN_DEBUG:-false}
 
     # Port for Wyoming protocol
     ports:
@@ -101,7 +159,7 @@ services:
 
     # Volume for model persistence
     volumes:
-      - ./piper-data:/data
+      - ./qwen-data:/data
 
     # Health check
     healthcheck:
@@ -109,4 +167,4 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 120s
