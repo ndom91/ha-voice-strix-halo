@@ -157,7 +157,7 @@ services:
       - QWEN_FLASH_ATTENTION=${QWEN_FLASH_ATTENTION:-true}
       - QWEN_SAMPLES_PER_CHUNK=${QWEN_SAMPLES_PER_CHUNK:-1024}
       - QWEN_CACHE_DIR=/data/models
-      - QWEN_DEBUG=${QWEN_DEBUG:-false}
+      - QWEN_DEBUG=${QWEN_DEBUG:-true}
 
     # Port for Wyoming protocol
     ports:

@@ -158,13 +158,9 @@ def get_model(
                 )
                 _LOGGER.info("Model loaded successfully")
 
-                # Compile model for faster inference (PyTorch 2.x optimization)
-                try:
-                    _LOGGER.info("Compiling model with torch.compile for optimized inference...")
-                    _model_cache = torch.compile(_model_cache, mode="reduce-overhead")
-                    _LOGGER.info("Model compilation successful")
-                except Exception as e:
-                    _LOGGER.warning("Model compilation failed (will use uncompiled model): %s", e)
+                # Note: torch.compile doesn't work on Qwen3TTSModel class directly
+                # Would need to compile individual forward methods, but this adds complexity
+                # and may not provide significant speedup on this architecture
 
             except Exception as e:
                 _LOGGER.error("Failed to load model: %s", e)
@@ -237,19 +233,42 @@ class QwenEventHandler(AsyncEventHandler):
                 generation_time = time.time() - start_time
                 _LOGGER.info("Audio generation took %.2f seconds", generation_time)
 
-                # Handle tuple/list return (audio, sample_rate) or just audio
+                # Debug: Log what we received
+                _LOGGER.debug("Result type: %s, length: %s",
+                             type(result).__name__,
+                             len(result) if isinstance(result, (tuple, list)) else "N/A")
+                if isinstance(result, (tuple, list)) and len(result) > 0:
+                    _LOGGER.debug("Result[0] type: %s, shape/value: %s",
+                                 type(result[0]).__name__,
+                                 result[0].shape if hasattr(result[0], 'shape') else result[0])
+                    if len(result) > 1:
+                        _LOGGER.debug("Result[1] type: %s, shape/value: %s",
+                                     type(result[1]).__name__,
+                                     result[1].shape if hasattr(result[1], 'shape') else result[1])
+
+                # Handle tuple/list return - check both possible orderings
                 if isinstance(result, (tuple, list)):
-                    audio_data = result[0]
-                    sample_rate = result[1] if len(result) > 1 else 22050
-                    _LOGGER.debug("Received %s result: audio type=%s, sample_rate=%d",
-                                 type(result).__name__,
-                                 type(audio_data).__name__,
-                                 sample_rate)
+                    # Try to determine which element is audio vs sample_rate
+                    # Sample rate is typically an integer (22050, 24000, etc)
+                    # Audio is typically a tensor/array with shape
+                    elem0_is_scalar = isinstance(result[0], (int, float)) or (
+                        hasattr(result[0], 'numel') and result[0].numel() == 1
+                    )
+
+                    if elem0_is_scalar and len(result) > 1:
+                        # First element is sample_rate, second is audio
+                        sample_rate = int(result[0])
+                        audio_data = result[1]
+                        _LOGGER.info("Detected tuple format: (sample_rate=%d, audio)", sample_rate)
+                    else:
+                        # First element is audio, second (if exists) is sample_rate
+                        audio_data = result[0]
+                        sample_rate = int(result[1]) if len(result) > 1 else 24000
+                        _LOGGER.info("Detected tuple format: (audio, sample_rate=%d)", sample_rate)
                 else:
                     audio_data = result
-                    sample_rate = 22050  # Default for Qwen3-TTS-12Hz
-                    _LOGGER.debug("Received single audio result type=%s, using default sample_rate=%d",
-                                 type(audio_data).__name__, sample_rate)
+                    sample_rate = 24000  # Default for Qwen3-TTS
+                    _LOGGER.info("Single result, using default sample_rate=%d", sample_rate)
 
                 # Convert list to numpy array
                 if isinstance(audio_data, list):
