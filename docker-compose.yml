@@ -220,6 +220,7 @@ services:
       - HF_HOME=/data/hf_cache
       - TRANSFORMERS_CACHE=/data/hf_cache
       - HUGGINGFACE_HUB_CACHE=/data/hf_cache/hub
+      - HF_TOKEN=${HF_TOKEN}
       # Chatterbox Turbo configuration
       - CHATTERBOX_DEVICE=${CHATTERBOX_DEVICE:-cuda:0}
       - CHATTERBOX_SAMPLES_PER_CHUNK=${CHATTERBOX_SAMPLES_PER_CHUNK:-1024}
