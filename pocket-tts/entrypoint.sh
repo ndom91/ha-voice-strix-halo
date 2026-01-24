@@ -2,7 +2,7 @@
 set -e
 
 # Default values
-POCKET_VOICE="${POCKET_VOICE:-hf://kyutai/tts-voices/alba-mackenna/casual.wav}"
+POCKET_VOICE="${POCKET_VOICE:-fantine}"
 POCKET_CACHE_DIR="${POCKET_CACHE_DIR:-}"
 POCKET_DEBUG="${POCKET_DEBUG:-false}"
 

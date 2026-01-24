@@ -19,8 +19,8 @@ async def main() -> None:
     parser = argparse.ArgumentParser(description="Wyoming Pocket TTS Server")
     parser.add_argument(
         "--voice",
-        default="hf://kyutai/tts-voices/alba-mackenna/casual.wav",
-        help="Voice audio prompt (HuggingFace URL or local .wav file path)",
+        default="fantine",
+        help="Voice name (alba, marius, javert, jean, fantine, cosette, eponine, azelma) or HF URL/wav path for cloning",
     )
     parser.add_argument(
         "--cache-dir",
@@ -48,21 +48,21 @@ async def main() -> None:
     _LOGGER.info("Voice: %s", args.voice)
 
     # Determine voice name for Home Assistant
-    # Extract voice name from HuggingFace URL or use filename
-    voice_name = "pocket-tts"
-    voice_description = "Pocket TTS Voice"
+    # Built-in voices: just the name (e.g., "fantine")
+    # Voice cloning: HF URL or .wav file path
+    voice_name = args.voice
     if args.voice.startswith("hf://"):
         # Extract voice name from HF URL (e.g., "alba-mackenna" from "hf://kyutai/tts-voices/alba-mackenna/casual.wav")
         parts = args.voice.split("/")
         if len(parts) >= 3:
             voice_name = parts[-2]  # Get the voice name part
-            voice_description = f"Pocket TTS - {voice_name}"
-    else:
-        # Use filename without extension
+    elif "/" in args.voice or "\\" in args.voice:
+        # File path - use filename without extension
         import os
         voice_name = os.path.splitext(os.path.basename(args.voice))[0]
-        voice_description = f"Pocket TTS - {voice_name}"
+    # else: built-in voice name, use as-is
 
+    voice_description = f"Pocket TTS - {voice_name}"
     _LOGGER.info("Voice name: %s", voice_name)
     _LOGGER.info("Voice description: %s", voice_description)
 
