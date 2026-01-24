@@ -218,11 +218,23 @@ class QwenEventHandler(AsyncEventHandler):
 
                 # Generate audio using VoiceDesign
                 _LOGGER.debug("Generating audio with voice_instruct: %s", self.voice_instruct)
-                audio_data = self.model.generate_voice_design(
+                result = self.model.generate_voice_design(
                     text=synthesize.text,
                     language=self.language,
                     instruct=self.voice_instruct,
                 )
+
+                # Handle tuple return (audio, sample_rate) or just audio
+                if isinstance(result, tuple):
+                    audio_data = result[0]
+                    sample_rate = result[1] if len(result) > 1 else 22050
+                    _LOGGER.debug("Received tuple result: audio shape=%s, sample_rate=%d",
+                                 audio_data.shape if hasattr(audio_data, 'shape') else 'unknown',
+                                 sample_rate)
+                else:
+                    audio_data = result
+                    sample_rate = 22050  # Default for Qwen3-TTS-12Hz
+                    _LOGGER.debug("Received single audio result, using default sample_rate=%d", sample_rate)
 
                 # Convert to numpy array if tensor
                 if torch.is_tensor(audio_data):
@@ -239,9 +251,6 @@ class QwenEventHandler(AsyncEventHandler):
 
                 # Convert to 16-bit PCM
                 audio_pcm = (audio_data * 32767).astype(np.int16)
-
-                # Get sample rate from model (default to 22050 Hz for Qwen3-TTS-12Hz)
-                sample_rate = 22050
 
                 _LOGGER.info(
                     "Generated audio: %d samples, %d Hz, %d bytes",
