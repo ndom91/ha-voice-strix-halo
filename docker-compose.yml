@@ -242,3 +242,60 @@ services:
       timeout: 10s
       retries: 3
       start_period: 90s
+
+  wyoming-pocket-tts:
+    build:
+      context: ./pocket-tts
+      dockerfile: Dockerfile
+      args:
+        HSA_OVERRIDE_GFX_VERSION: ${HSA_OVERRIDE_GFX_VERSION:-11.5.1}
+    container_name: wyoming-pocket-tts-rocm
+    restart: unless-stopped
+
+    # GPU device access - required for ROCm base image
+    # Note: Pocket TTS is CPU-only and doesn't benefit from GPU
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+
+    # Security options for GPU access
+    security_opt:
+      - seccomp:unconfined
+
+    # Group access for GPU
+    group_add:
+      - video
+      - render
+
+    # Environment variables
+    environment:
+      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-11.5.1}
+      - ROCM_VERSION=7.1.1
+      - ROCM_PATH=/opt/rocm
+      - LD_LIBRARY_PATH=/usr/local/lib:/opt/rocm/lib:/opt/rocm/lib/llvm/lib
+      # Hugging Face cache configuration
+      - HF_HOME=/data/hf_cache
+      - TRANSFORMERS_CACHE=/data/hf_cache
+      - HUGGINGFACE_HUB_CACHE=/data/hf_cache/hub
+      # Pocket TTS configuration
+      # Voice options: alba-mackenna, marius, javert, jean, fantine, cosette, eponine, azelma
+      # Or use custom .wav file path for voice cloning
+      - POCKET_VOICE=${POCKET_VOICE:-hf://kyutai/tts-voices/alba-mackenna/casual.wav}
+      - POCKET_CACHE_DIR=/data/models
+      - POCKET_DEBUG=${POCKET_DEBUG:-true}
+
+    # Port for Wyoming protocol (using 10202 to avoid conflicts)
+    ports:
+      - "10202:10202"
+
+    # Volume for model persistence
+    volumes:
+      - ./pocket-data:/data
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.connect(('localhost',10202)); s.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
