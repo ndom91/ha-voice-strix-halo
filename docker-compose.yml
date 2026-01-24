@@ -149,7 +149,7 @@ services:
       - TRANSFORMERS_CACHE=/data/hf_cache
       - HUGGINGFACE_HUB_CACHE=/data/hf_cache/hub
       # Qwen3-TTS configuration
-      - QWEN_MODEL=${QWEN_MODEL:-Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign}
+      - QWEN_MODEL=${QWEN_MODEL:-Qwen/Qwen3-TTS-12Hz-0.6B-VoiceDesign}
       - QWEN_VOICE_INSTRUCT=${QWEN_VOICE_INSTRUCT:-Clear, natural voice with medium pitch. Friendly British female personal assistant.}
       - QWEN_LANGUAGE=${QWEN_LANGUAGE:-Auto}
       - QWEN_DEVICE=${QWEN_DEVICE:-cuda:0}
