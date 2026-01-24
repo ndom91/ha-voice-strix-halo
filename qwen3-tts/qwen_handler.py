@@ -107,12 +107,39 @@ def get_model(
                     # Create symlinks for config files in speech_tokenizer subdirectory
                     tokenizer_path = os.path.join(model_path, "speech_tokenizer")
                     if os.path.exists(tokenizer_path):
-                        for config_file in ["preprocessor_config.json", "config.json", "configuration.json"]:
-                            src = os.path.join(model_path, config_file)
-                            dst = os.path.join(tokenizer_path, config_file)
-                            if os.path.exists(src) and not os.path.exists(dst):
-                                os.symlink(src, dst)
-                                _LOGGER.info("Created symlink: %s -> %s", dst, config_file)
+                        # Link config.json (which exists)
+                        config_src = os.path.join(model_path, "config.json")
+                        config_dst = os.path.join(tokenizer_path, "config.json")
+                        if os.path.exists(config_src) and not os.path.exists(config_dst):
+                            os.symlink(config_src, config_dst)
+                            _LOGGER.info("Created symlink: config.json")
+
+                        # Create preprocessor_config.json with feature_extractor_type
+                        # The original config.json doesn't have this key, causing AutoFeatureExtractor to fail
+                        preprocessor_dst = os.path.join(tokenizer_path, "preprocessor_config.json")
+
+                        if not os.path.exists(preprocessor_dst):
+                            import json
+                            # Read the config.json to get base configuration
+                            if os.path.exists(config_src):
+                                with open(config_src, 'r') as f:
+                                    config_data = json.load(f)
+
+                                # Add the feature_extractor_type key that transformers expects
+                                # Using "wav2vec2" as it's an audio feature extractor
+                                config_data["feature_extractor_type"] = "Wav2Vec2FeatureExtractor"
+
+                                # Write the patched config as preprocessor_config.json
+                                with open(preprocessor_dst, 'w') as f:
+                                    json.dump(config_data, f, indent=2)
+                                _LOGGER.info("Created preprocessor_config.json with feature_extractor_type")
+
+                        # Also link configuration.json if it exists
+                        configuration_src = os.path.join(model_path, "configuration.json")
+                        configuration_dst = os.path.join(tokenizer_path, "configuration.json")
+                        if os.path.exists(configuration_src) and not os.path.exists(configuration_dst):
+                            os.symlink(configuration_src, configuration_dst)
+                            _LOGGER.info("Created symlink: configuration.json")
                     else:
                         _LOGGER.warning("speech_tokenizer directory not found at %s", tokenizer_path)
 
