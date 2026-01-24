@@ -15,16 +15,22 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Don't install torchvision - chatterbox doesn't need it and it causes NMS operator errors
-# Use torch and triton from base image (already present in rocm/pytorch base)
+# Try experimental ROCm 7.1 PyTorch builds from download.pytorch.org
+# Falls back to base image torch if not available
+RUN pip3 install --no-cache-dir --force-reinstall \
+    --index-url https://download.pytorch.org/whl/rocm7.1 \
+    torch torchaudio triton || echo "Using base image torch"
 
 # Install Python dependencies
 RUN pip3 install --no-cache-dir \
     wyoming
 
-# Install Chatterbox TTS with all dependencies
+# Install Chatterbox TTS with all dependencies, then remove incompatible torchvision
+# Torchvision gets installed as a transitive dependency but is incompatible with ROCm
+# and causes "operator torchvision::nms does not exist" errors
 RUN pip3 install --no-cache-dir \
-    git+https://github.com/resemble-ai/chatterbox.git
+    git+https://github.com/resemble-ai/chatterbox.git && \
+    pip3 uninstall -y torchvision || true
 
 # Create app directory
 WORKDIR /app
