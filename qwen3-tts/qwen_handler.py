@@ -224,21 +224,31 @@ class QwenEventHandler(AsyncEventHandler):
                     instruct=self.voice_instruct,
                 )
 
-                # Handle tuple return (audio, sample_rate) or just audio
-                if isinstance(result, tuple):
+                # Handle tuple/list return (audio, sample_rate) or just audio
+                if isinstance(result, (tuple, list)):
                     audio_data = result[0]
                     sample_rate = result[1] if len(result) > 1 else 22050
-                    _LOGGER.debug("Received tuple result: audio shape=%s, sample_rate=%d",
-                                 audio_data.shape if hasattr(audio_data, 'shape') else 'unknown',
+                    _LOGGER.debug("Received %s result: audio type=%s, sample_rate=%d",
+                                 type(result).__name__,
+                                 type(audio_data).__name__,
                                  sample_rate)
                 else:
                     audio_data = result
                     sample_rate = 22050  # Default for Qwen3-TTS-12Hz
-                    _LOGGER.debug("Received single audio result, using default sample_rate=%d", sample_rate)
+                    _LOGGER.debug("Received single audio result type=%s, using default sample_rate=%d",
+                                 type(audio_data).__name__, sample_rate)
+
+                # Convert list to numpy array
+                if isinstance(audio_data, list):
+                    audio_data = np.array(audio_data)
+                    _LOGGER.debug("Converted list to numpy array: shape=%s, dtype=%s",
+                                 audio_data.shape, audio_data.dtype)
 
                 # Convert to numpy array if tensor
                 if torch.is_tensor(audio_data):
                     audio_data = audio_data.cpu().numpy()
+                    _LOGGER.debug("Converted tensor to numpy: shape=%s, dtype=%s",
+                                 audio_data.shape, audio_data.dtype)
 
                 # Ensure audio is in correct format (float32)
                 if audio_data.dtype != np.float32:
