@@ -92,6 +92,7 @@ async def main() -> None:
                     url="https://github.com/QwenLM/Qwen-TTS",
                 ),
                 installed=True,
+                version="1.7.0",
                 voices=[
                     TtsVoice(
                         name="voice_design",
