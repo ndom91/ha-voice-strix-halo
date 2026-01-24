@@ -144,6 +144,12 @@ services:
       - LD_LIBRARY_PATH=/usr/local/lib:/opt/rocm/lib:/opt/rocm/lib/llvm/lib
       # Enable experimental ROCm SDPA optimizations for better performance
       - TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
+      # MIOpen performance tuning - fix workspace allocation warnings
+      - MIOPEN_USER_DB_PATH=/tmp/miopen-cache
+      - MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-cache
+      - MIOPEN_FIND_MODE=1
+      # PyTorch memory optimization
+      - PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
       # Hugging Face cache configuration
       - HF_HOME=/data/hf_cache
       - TRANSFORMERS_CACHE=/data/hf_cache
@@ -153,7 +159,7 @@ services:
       - QWEN_VOICE_INSTRUCT=${QWEN_VOICE_INSTRUCT:-Clear, natural voice with medium pitch. Friendly British female personal assistant.}
       - QWEN_LANGUAGE=${QWEN_LANGUAGE:-Auto}
       - QWEN_DEVICE=${QWEN_DEVICE:-cuda:0}
-      - QWEN_DTYPE=${QWEN_DTYPE:-int8}
+      - QWEN_DTYPE=${QWEN_DTYPE:-bfloat16}
       - QWEN_FLASH_ATTENTION=${QWEN_FLASH_ATTENTION:-true}
       - QWEN_SAMPLES_PER_CHUNK=${QWEN_SAMPLES_PER_CHUNK:-1024}
       - QWEN_CACHE_DIR=/data/models
