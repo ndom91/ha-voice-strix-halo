@@ -1,4 +1,4 @@
-FROM rocm/pytorch:rocm7.1.1_ubuntu22.04_py3.10_pytorch_release_2.9.1
+FROM rocm/pytorch:rocm7.1.1_ubuntu24.04_py3.11_pytorch_release_2.9.1
 
 ARG HSA_OVERRIDE_GFX_VERSION=11.5.1
 
