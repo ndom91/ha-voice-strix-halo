@@ -6,12 +6,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION} \
     PYTHONUNBUFFERED=1
 
-# Install system dependencies
+# Install system dependencies and build tools
 RUN apt-get update && apt-get install -y \
     libsndfile1 \
     ffmpeg \
     sox \
     git \
+    ninja-build \
+    cmake \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -21,11 +24,26 @@ RUN pip3 install --no-cache-dir \
     transformers \
     accelerate \
     numpy \
-    scipy
+    scipy \
+    packaging \
+    ninja
 
 # Attempt to install flash-attention for ROCm (non-fatal if fails)
-RUN pip3 install --no-cache-dir flash-attn --no-build-isolation || \
-    echo "Flash attention installation failed - will use standard attention"
+# Note: ROCm flash-attention supports MI200x, MI250x, MI300x, MI355x GPUs (CDNA architecture)
+# RDNA GPUs (like Radeon 8060S) may not be fully supported - standard attention will be used as fallback
+# Compilation can take 5-10 minutes and requires significant build resources
+RUN echo "========================================" && \
+    echo "Attempting to install flash-attn for ROCm..." && \
+    echo "Supported GPUs: MI200x, MI250x, MI300x, MI355x" && \
+    echo "RDNA GPUs will fall back to standard attention" && \
+    echo "========================================" && \
+    MAX_JOBS=4 pip3 install --no-cache-dir flash-attn --no-build-isolation 2>&1 | tee /tmp/flash-attn-install.log || \
+    (echo "========================================" && \
+     echo "Flash attention installation failed" && \
+     echo "This is expected for RDNA GPUs - standard attention will be used" && \
+     echo "Build log saved to /tmp/flash-attn-install.log" && \
+     echo "========================================") && \
+    (pip3 show flash-attn >/dev/null 2>&1 && echo "✓ flash-attn successfully installed" || echo "✗ flash-attn not available - using standard PyTorch attention")
 
 # Create app directory
 WORKDIR /app
