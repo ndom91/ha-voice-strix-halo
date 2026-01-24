@@ -39,6 +39,10 @@ def get_model(
             _LOGGER.info("Device: %s", device)
 
             try:
+                # CRITICAL FIX: Import torchvision first to register NMS operator
+                # This prevents "RuntimeError: operator torchvision::nms does not exist"
+                # when chatterbox tries to import transformers/LlamaModel
+                import torchvision
                 from chatterbox.tts_turbo import ChatterboxTurboTTS
 
                 _LOGGER.info("Calling ChatterboxTurboTTS.from_pretrained...")
