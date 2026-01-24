@@ -68,19 +68,30 @@ def get_model(
             _LOGGER.info("Loading Qwen3-TTS model: %s", model_name)
             _LOGGER.info("Device: %s, dtype: %s, flash_attention: %s", device, dtype, flash_attention)
 
-            # Convert dtype string to torch dtype
-            dtype_map = {
-                "bfloat16": torch.bfloat16,
-                "float16": torch.float16,
-                "float32": torch.float32,
-            }
-            torch_dtype = dtype_map.get(dtype.lower(), torch.bfloat16)
-
             # Prepare kwargs for from_pretrained
             model_kwargs = {
                 "device_map": device,
-                "dtype": torch_dtype,
             }
+
+            # Handle quantization and dtype
+            if dtype.lower() in ["int8", "8bit"]:
+                # 8-bit quantization using BitsAndBytes
+                model_kwargs["load_in_8bit"] = True
+                _LOGGER.info("Using 8-bit quantization")
+            elif dtype.lower() in ["int4", "4bit"]:
+                # 4-bit quantization using BitsAndBytes
+                model_kwargs["load_in_4bit"] = True
+                _LOGGER.info("Using 4-bit quantization")
+            else:
+                # Standard dtype
+                dtype_map = {
+                    "bfloat16": torch.bfloat16,
+                    "float16": torch.float16,
+                    "float32": torch.float32,
+                }
+                torch_dtype = dtype_map.get(dtype.lower(), torch.bfloat16)
+                model_kwargs["dtype"] = torch_dtype
+                _LOGGER.info("Using dtype: %s", dtype)
 
             # Use SDPA (Scaled Dot Product Attention) instead of flash_attention_2
             # SDPA is PyTorch's built-in optimized attention and doesn't require flash-attn package

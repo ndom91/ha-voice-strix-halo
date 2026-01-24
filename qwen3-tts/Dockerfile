@@ -25,7 +25,8 @@ RUN pip3 install --no-cache-dir \
     numpy \
     scipy \
     packaging \
-    ninja
+    ninja \
+    bitsandbytes
 
 # Install qwen-tts from GitHub to get latest fixes (PyPI may be outdated)
 # The model was just released Jan 22, 2026 and fixes are being actively pushed
