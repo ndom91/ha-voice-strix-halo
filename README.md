@@ -123,7 +123,6 @@ CPU-only, ultra-low latency (~200ms to first audio chunk).
 - Weighted: `af_bella(2)+af_sky(1)` (2:1 ratio)
 
 **Features:**
-- Streaming audio responses for low latency
 - Multi-language support (en, ja, zh, ko, fr, es)
 - No local GPU required - lightweight proxy service
 - Voice changes require container restart

@@ -1,9 +1,12 @@
 """Wyoming protocol event handler for Kokoro TTS."""
 
+import io
 import logging
 import time
 
 import httpx
+import numpy as np
+from scipy.io import wavfile
 from wyoming.audio import AudioChunk, AudioStart, AudioStop
 from wyoming.event import Event
 from wyoming.info import Describe, Info
@@ -47,26 +50,62 @@ class KokoroEventHandler(AsyncEventHandler):
             _LOGGER.info("Synthesizing: %s", synthesize.text)
 
             try:
-                # Prepare API request with streaming enabled
+                # Prepare API request
                 endpoint = f"{self.api_url}/audio/speech"
                 payload = {
                     "model": "kokoro",
                     "voice": self.voice,
                     "input": synthesize.text,
-                    "response_format": "pcm",  # Raw PCM for streaming
+                    "response_format": "wav",
                     "speed": self.speed,
-                    "stream": True,  # Enable streaming
                 }
 
-                _LOGGER.info("Calling Kokoro API (streaming): %s", endpoint)
+                _LOGGER.debug("Calling Kokoro API: %s", endpoint)
                 start_time = time.time()
-                first_chunk_time = None
-                total_samples = 0
 
-                # Kokoro outputs 24000 Hz 16-bit mono PCM
-                sample_rate = 24000
+                # Make async HTTP request to Kokoro-FastAPI
+                async with httpx.AsyncClient(timeout=self.api_timeout) as client:
+                    response = await client.post(endpoint, json=payload)
+                    response.raise_for_status()
+                    audio_bytes = response.content
 
-                # Send audio start event immediately
+                api_time = time.time() - start_time
+                _LOGGER.info("API call took %.2f seconds", api_time)
+
+                # Parse audio response
+                sample_rate, audio_data = self._parse_audio(audio_bytes)
+
+                # Ensure int16 mono format
+                if audio_data.dtype != np.int16:
+                    # Normalize to [-1, 1] then convert to int16
+                    if audio_data.dtype in [np.float32, np.float64]:
+                        max_val = np.abs(audio_data).max()
+                        if max_val > 1.0:
+                            audio_data = audio_data / max_val
+                        audio_data = (audio_data * 32767).astype(np.int16)
+                    else:
+                        audio_data = audio_data.astype(np.int16)
+
+                # Ensure mono
+                if audio_data.ndim > 1:
+                    if audio_data.shape[1] == 1:
+                        audio_data = audio_data.squeeze()
+                    else:
+                        # Mix to mono if stereo
+                        audio_data = audio_data.mean(axis=1).astype(np.int16)
+
+                # Calculate audio metrics
+                audio_duration = len(audio_data) / sample_rate
+                rtf = api_time / audio_duration if audio_duration > 0 else 0
+                _LOGGER.info(
+                    "Generated audio: %d samples, %d Hz, %.2f seconds, RTF: %.2fx",
+                    len(audio_data),
+                    sample_rate,
+                    audio_duration,
+                    rtf,
+                )
+
+                # Send audio start event
                 await self.write_event(
                     AudioStart(
                         rate=sample_rate,
@@ -75,71 +114,20 @@ class KokoroEventHandler(AsyncEventHandler):
                     ).event()
                 )
 
-                # Stream response chunks as they arrive
-                async with httpx.AsyncClient(timeout=self.api_timeout) as client:
-                    async with client.stream("POST", endpoint, json=payload) as response:
-                        response.raise_for_status()
+                # Stream audio in chunks
+                chunk_size = 1024
+                for i in range(0, len(audio_data), chunk_size):
+                    chunk = audio_data[i : i + chunk_size]
+                    chunk_bytes = chunk.tobytes()
 
-                        # Buffer for incomplete samples
-                        buffer = b""
-
-                        async for chunk in response.aiter_bytes(chunk_size=512):
-                            if first_chunk_time is None:
-                                first_chunk_time = time.time()
-                                ttfb = first_chunk_time - start_time
-                                _LOGGER.info("Time to first byte: %.3f seconds", ttfb)
-
-                            # Add chunk to buffer
-                            buffer += chunk
-
-                            # Process complete samples (2 bytes per sample for int16)
-                            while len(buffer) >= 2:
-                                # Calculate how many complete samples we have
-                                samples_available = len(buffer) // 2
-
-                                # Send in chunks of 1024 samples for low latency
-                                chunk_samples = min(samples_available, 1024)
-                                chunk_bytes = buffer[: chunk_samples * 2]
-                                buffer = buffer[chunk_samples * 2 :]
-
-                                # Send audio chunk
-                                await self.write_event(
-                                    AudioChunk(
-                                        audio=chunk_bytes,
-                                        rate=sample_rate,
-                                        width=2,
-                                        channels=1,
-                                    ).event()
-                                )
-
-                                total_samples += chunk_samples
-
-                        # Send any remaining buffered data
-                        if len(buffer) >= 2:
-                            remaining_samples = len(buffer) // 2
-                            chunk_bytes = buffer[: remaining_samples * 2]
-                            await self.write_event(
-                                AudioChunk(
-                                    audio=chunk_bytes,
-                                    rate=sample_rate,
-                                    width=2,
-                                    channels=1,
-                                ).event()
-                            )
-                            total_samples += remaining_samples
-
-                # Calculate metrics
-                total_time = time.time() - start_time
-                audio_duration = total_samples / sample_rate
-                rtf = total_time / audio_duration if audio_duration > 0 else 0
-                _LOGGER.info(
-                    "Streaming complete: %d samples, %d Hz, %.2f seconds, RTF: %.2fx, Total time: %.2fs",
-                    total_samples,
-                    sample_rate,
-                    audio_duration,
-                    rtf,
-                    total_time,
-                )
+                    await self.write_event(
+                        AudioChunk(
+                            audio=chunk_bytes,
+                            rate=sample_rate,
+                            width=2,
+                            channels=1,
+                        ).event()
+                    )
 
                 # Send audio stop event
                 await self.write_event(AudioStop().event())
@@ -159,3 +147,33 @@ class KokoroEventHandler(AsyncEventHandler):
             return True
 
         return True
+
+    def _parse_audio(self, audio_bytes: bytes) -> tuple[int, np.ndarray]:
+        """Parse audio bytes (WAV or raw PCM) and return sample rate + data.
+
+        Args:
+            audio_bytes: Audio data (WAV format expected)
+
+        Returns:
+            Tuple of (sample_rate, audio_data_as_numpy_array)
+        """
+        # Check if it's a WAV file
+        if audio_bytes.startswith(b"RIFF"):
+            try:
+                # Parse WAV file using scipy
+                with io.BytesIO(audio_bytes) as wav_io:
+                    sample_rate, audio_data = wavfile.read(wav_io)
+                _LOGGER.debug(
+                    "Parsed WAV: rate=%d Hz, shape=%s, dtype=%s",
+                    sample_rate,
+                    audio_data.shape,
+                    audio_data.dtype,
+                )
+                return sample_rate, audio_data
+            except Exception as e:
+                _LOGGER.warning("Failed to parse WAV, treating as raw PCM: %s", e)
+
+        # Fall back to raw PCM at 24000 Hz
+        _LOGGER.debug("Treating as raw PCM at 24000 Hz")
+        audio_data = np.frombuffer(audio_bytes, dtype=np.int16)
+        return 24000, audio_data

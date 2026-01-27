@@ -1,13 +1,20 @@
 FROM python:3.12-slim
 
+# Install system dependencies for audio processing
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set working directory
 WORKDIR /app
 
 # Install Python dependencies
-# Using streaming PCM, no audio processing libraries needed
 RUN pip install --no-cache-dir \
     wyoming \
-    httpx
+    httpx \
+    numpy \
+    scipy
 
 # Copy application files
 COPY kokoro_handler.py .
